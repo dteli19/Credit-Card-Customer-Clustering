@@ -31,13 +31,13 @@ Identify different segments in the existing customer based on their spending pat
 
 **About the Data**
 Data is of various customers of a bank with their credit limit, the total number of credit cards the customer has, and different channels through which a customer has contacted the bank for any queries, different channels include visiting the bank, online and through a call centre.
--Sl_no - Customer Serial Number
--Customer Key - Customer identification
--Avg_Credit_Limit - Average credit limit (currency is not specified, you can make an assumption around this)
--Total_Credit_Cards - Total number of credit cards
--Total_visits_bank - Total bank visits
--Total_visits_online - Total online visits
--Total_calls_made - Total calls made
+- Sl_no - Customer Serial Number
+- Customer Key - Customer identification
+- Avg_Credit_Limit - Average credit limit (currency is not specified, you can make an assumption around this)
+- Total_Credit_Cards - Total number of credit cards
+- Total_visits_bank - Total bank visits
+- Total_visits_online - Total online visits
+- Total_calls_made - Total calls made
 """)
 
 # =========================
@@ -275,7 +275,6 @@ profile = (
 st.subheader("Cluster Descriptions")
 
 # ---- Beautified Cluster Profile Table ----
-st.subheader("Cluster Profiles (Mean by Feature)")
 if not profile.empty:
     # Pretty labels for columns
     nice_names = {
