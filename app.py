@@ -273,12 +273,6 @@ profile = (
 
 # ---- Cluster Descriptions (from your brief) ----
 st.subheader("Cluster Descriptions")
-st.markdown("""
-**Results:**  
-- **Cluster 0**: Individuals with **low average credit limit**, **very few or no credit cards**, and who **use the phone** as the primary method to contact the bank.  
-- **Cluster 1**: Individuals with **average credit limits**, **average number of credit cards**, and a **tendency to contact the bank in person** (branch visits).  
-- **Cluster 2**: Individuals with **very high average credit limit**, **high count of credit cards**, and a **tendency to use online banking services**.
-""")
 
 # ---- Beautified Cluster Profile Table ----
 st.subheader("Cluster Profiles (Mean by Feature)")
@@ -312,6 +306,12 @@ if not profile.empty:
     st.dataframe(styler, use_container_width=True)
 else:
     st.info("No cluster profiles available (no labeled rows).")
+
+st.markdown("""
+- **Cluster 0**: Individuals with **low average credit limit**, **very few or no credit cards**, and who **use the phone** as the primary method to contact the bank.  
+- **Cluster 1**: Individuals with **average credit limits**, **average number of credit cards**, and a **tendency to contact the bank in person** (branch visits).  
+- **Cluster 2**: Individuals with **very high average credit limit**, **high count of credit cards**, and a **tendency to use online banking services**.
+""")
 
 # =========================
 # Downloads
