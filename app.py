@@ -37,7 +37,6 @@ if not uploaded:
 # Read data
 try:
     df = pd.read_csv(uploaded)
-    
     # ✅ Normalize column names immediately after reading
     df.columns = (
         df.columns
@@ -363,6 +362,7 @@ else:
 
 report_md = "".join(report_lines)
 st.download_button("⬇️ Download Summary (Markdown)", data=report_md, file_name="summary_report.md", mime="text/markdown")
+
 
 # =============================
 # Business Recommendations (mapping-aware)
