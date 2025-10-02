@@ -153,6 +153,169 @@ st.download_button(
     mime="text/csv",
 )
 
+# =============================
+# Executive Summary & Insights
+# =============================
+
+import io
+from sklearn.metrics import silhouette_score
+
+st.markdown("---")
+st.header("🧭 Executive Summary & Insights")
+
+summary = {}
+takeaways = []
+observations = []
+
+# --- High-level dataset summary ---
+summary["rows"] = len(df)
+summary["cols_total"] = df.shape[1]
+summary["cols_numeric"] = numeric_df.shape[1]
+summary["missing_pct"] = round(100 * (df.isna().mean().mean()), 2)
+
+# --- Clustering summary (if available) ---
+summary["k"] = k
+summary["cluster_sizes"] = dict(pd.Series(clusters).value_counts().sort_index())
+summary["largest_cluster"] = int(pd.Series(clusters).value_counts().idxmax())
+summary["silhouette"] = None
+try:
+    # compute silhouette on the scaled features used for clustering (if >= 2 clusters & > samples)
+    if len(np.unique(clusters)) > 1 and X_scaled.shape[0] > len(np.unique(clusters)):
+        summary["silhouette"] = round(float(silhouette_score(X_scaled, clusters)), 3)
+except Exception:
+    pass
+
+# --- Correlations (top pairs) ---
+top_corr_pairs = []
+try:
+    corr_m = numeric_df.corr(numeric_only=True).abs()
+    corr_ut = corr_m.where(np.triu(np.ones(corr_m.shape), k=1).astype(bool))
+    corr_pairs = corr_ut.stack().sort_values(ascending=False)
+    for (c1, c2), v in corr_pairs.head(5).items():
+        top_corr_pairs.append((c1, c2, round(float(v), 3)))
+except Exception:
+    pass
+
+# --- Skewed features (flag potential transformations) ---
+skew_series = numeric_df.skew(numeric_only=True).sort_values(ascending=False)
+skewed = [(c, round(float(v), 2)) for c, v in skew_series.head(5).items() if abs(v) >= 1]
+
+# --- Outlier-ish columns (IQR rule of thumb) ---
+def iqr_outlier_rate(series: pd.Series):
+    q1, q3 = series.quantile(0.25), series.quantile(0.75)
+    iqr = q3 - q1
+    if iqr == 0:
+        return 0.0
+    lower, upper = q1 - 1.5*iqr, q3 + 1.5*iqr
+    return float(((series < lower) | (series > upper)).mean())
+
+outlier_rates = {}
+for col in numeric_df.columns[:30]:  # cap for performance
+    try:
+        outlier_rates[col] = round(iqr_outlier_rate(numeric_df[col].dropna()), 3)
+    except Exception:
+        pass
+top_outlier_cols = sorted(outlier_rates.items(), key=lambda x: x[1], reverse=True)[:5]
+
+# --- Cluster profiles on selected columns (or fallback) ---
+profile_cols = profile_df.columns.tolist() if "profile_df" in locals() else []
+cluster_profiles = {}
+try:
+    cluster_profiles = scored.groupby("Cluster")[profile_cols].mean().round(2).to_dict(orient="index") if profile_cols else {}
+except Exception:
+    pass
+
+# ---------------------------
+# Build takeaways (bullet points)
+# ---------------------------
+# Data health
+takeaways.append(f"Data contains **{summary['rows']}** rows and **{summary['cols_total']}** columns "
+                 f"({summary['cols_numeric']} numeric). Overall missingness: **{summary['missing_pct']}%**.")
+
+# Clustering quality
+if summary["silhouette"] is not None:
+    takeaways.append(f"KMeans with **k={summary['k']}** produced a silhouette score of **{summary['silhouette']}**, "
+                     "indicating cluster separation quality.")
+
+# Cluster distribution
+sizes_text = ", ".join([f"C{cid}: {cnt}" for cid, cnt in summary["cluster_sizes"].items()])
+takeaways.append(f"Cluster distribution — {sizes_text}. Largest cluster: **C{summary['largest_cluster']}**.")
+
+# Correlations
+if top_corr_pairs:
+    corr_text = "; ".join([f"**{a}–{b}** ({v})" for a,b,v in top_corr_pairs])
+    takeaways.append(f"Top correlated feature pairs: {corr_text}.")
+
+# Skewness
+if skewed:
+    skew_text = ", ".join([f"**{c}** (skew={v})" for c, v in skewed[:5]])
+    takeaways.append(f"Skewed features detected: {skew_text}. Consider transforms (e.g., log) before modeling.")
+
+# Outliers
+if top_outlier_cols:
+    out_text = ", ".join([f"**{c}** ({r*100:.1f}% outliers by IQR)" for c, r in top_outlier_cols])
+    takeaways.append(f"Potential outlier-heavy columns: {out_text}.")
+
+# Cluster profile narrative (if we have it)
+if cluster_profiles and profile_cols:
+    # Identify extremes per feature across clusters
+    try:
+        prof_df = scored.groupby("Cluster")[profile_cols].mean()
+        for f in profile_cols:
+            max_c = int(prof_df[f].idxmax())
+            min_c = int(prof_df[f].idxmin())
+            observations.append(f"For **{f}**, **C{max_c}** is highest and **C{min_c}** is lowest.")
+    except Exception:
+        pass
+
+# ---------------------------
+# Show in the app
+# ---------------------------
+st.subheader("Executive Summary")
+st.markdown(
+    f"""
+- Rows: **{summary['rows']}**, Columns: **{summary['cols_total']}** (numeric: **{summary['cols_numeric']}**)
+- Missingness (overall avg): **{summary['missing_pct']}%**
+- Clustering: **k = {summary['k']}**, Largest cluster: **C{summary['largest_cluster']}**
+{"- Silhouette score: **" + str(summary['silhouette']) + "**" if summary['silhouette'] is not None else ""}
+"""
+)
+
+st.subheader("Key Takeaways")
+for t in takeaways:
+    st.markdown(f"- {t}")
+
+st.subheader("Notable Observations")
+if observations:
+    for o in observations:
+        st.markdown(f"- {o}")
+else:
+    st.markdown("- No extreme cluster differences detected on the selected profile features yet. Try changing the feature set or **k**.")
+
+# ---------------------------
+# Download a Markdown report
+# ---------------------------
+report_lines = []
+report_lines.append("# Executive Summary\n")
+report_lines.append(f"- Rows: {summary['rows']}, Columns: {summary['cols_total']} (numeric: {summary['cols_numeric']})\n")
+report_lines.append(f"- Missingness (overall avg): {summary['missing_pct']}%\n")
+report_lines.append(f"- Clustering: k = {summary['k']}, Largest cluster: C{summary['largest_cluster']}\n")
+if summary['silhouette'] is not None:
+    report_lines.append(f"- Silhouette score: {summary['silhouette']}\n")
+report_lines.append("\n# Key Takeaways\n")
+for t in takeaways:
+    report_lines.append(f"- {t}\n")
+report_lines.append("\n# Notable Observations\n")
+if observations:
+    for o in observations:
+        report_lines.append(f"- {o}\n")
+else:
+    report_lines.append("- (none)\n")
+
+report_md = "".join(report_lines)
+st.download_button("⬇️ Download Summary (Markdown)", data=report_md, file_name="summary_report.md", mime="text/markdown")
+
+
 # ---------------------------
 # Notebook & Repo links (optional)
 # ---------------------------
