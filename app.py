@@ -315,6 +315,85 @@ else:
 report_md = "".join(report_lines)
 st.download_button("⬇️ Download Summary (Markdown)", data=report_md, file_name="summary_report.md", mime="text/markdown")
 
+# =============================
+# Business Recommendations
+# =============================
+
+st.markdown("---")
+st.header("💡 Business Recommendations")
+
+# Choose columns to profile/recommend on (fallback if not present)
+cand_cols = ["BALANCE","PURCHASES","CASH_ADVANCE","CREDIT_LIMIT","PAYMENTS","MINIMUM_PAYMENTS","TENURE"]
+use_cols = [c for c in cand_cols if c in numeric_df.columns]
+if len(use_cols) < 3:
+    # if your dataset uses different names, adjust here or let user select:
+    st.info("Not enough standard columns found for recommendations. "
+            "Consider mapping your columns to BALANCE, PURCHASES, CREDIT_LIMIT, etc.")
+else:
+    prof = scored.groupby("Cluster")[use_cols].mean()
+
+    # Compute z-scores per feature across clusters (so we can call “high/low” relative to other clusters)
+    prof_z = (prof - prof.mean()) / (prof.std(ddof=0).replace(0, 1))
+
+    # Heuristics: tune these thresholds as you like
+    HIGH = 0.6
+    LOW  = -0.6
+
+    recs = []  # (cluster_id, bullets)
+    for cid, row in prof_z.iterrows():
+        bullets = []
+
+        # --- Example rules (adjust to your dataset) ---
+        # High BALANCE, Low PAYMENTS -> collections risk / payment plan
+        if ("BALANCE" in row.index and row["BALANCE"] >= HIGH) and ("PAYMENTS" in row.index and row["PAYMENTS"] <= LOW):
+            bullets.append("High revolving balance and relatively low payments → **target with payment plans / APR review**.")
+
+        # High PURCHASES + High CREDIT_LIMIT -> profitable transactors; upsell rewards
+        if ("PURCHASES" in row.index and row["PURCHASES"] >= HIGH) and ("CREDIT_LIMIT" in row.index and row["CREDIT_LIMIT"] >= HIGH):
+            bullets.append("High purchases with strong credit limit → **upsell premium rewards & retention offers**.")
+
+        # High CASH_ADVANCE -> fee-sensitive; promote alternatives
+        if "CASH_ADVANCE" in row.index and row["CASH_ADVANCE"] >= HIGH:
+            bullets.append("Heavy cash advance usage → **educate on lower-cost alternatives; review cash advance fees**.")
+
+        # Low MINIMUM_PAYMENTS vs high BALANCE → delinquency risk
+        if ("MINIMUM_PAYMENTS" in row.index and row["MINIMUM_PAYMENTS"] <= LOW) and ("BALANCE" in row.index and row["BALANCE"] >= HIGH):
+            bullets.append("Low minimum payments relative to balance → **proactive delinquency prevention outreach**.")
+
+        # New customers (low TENURE) with moderate/high PURCHASES → nurture early loyalty
+        if "TENURE" in row.index and row["TENURE"] <= LOW:
+            if "PURCHASES" in row.index and row["PURCHASES"] >= 0:
+                bullets.append("Newer customers showing activity → **onboard with early-life rewards & tips to increase stickiness**.")
+            else:
+                bullets.append("Newer customers with low activity → **onboard with welcome nudges & first-purchase incentives**.")
+
+        # If nothing triggered, add a generic action based on top feature
+        if not bullets:
+            top_feat = row.abs().sort_values(ascending=False).index[0]
+            direction = "high" if row[top_feat] > 0 else "low"
+            bullets.append(f"No strong signals hit. Focus on segment’s **{direction} {top_feat}** with tailored messaging.")
+
+        recs.append((cid, bullets))
+
+    # Render recommendations
+    for cid, bullets in recs:
+        st.subheader(f"Cluster C{cid}: Recommended Actions")
+        for b in bullets:
+            st.markdown(f"- {b}")
+
+    # Downloadable recommendations (Markdown)
+    lines = ["# Business Recommendations\n"]
+    for cid, bullets in recs:
+        lines.append(f"\n## Cluster C{cid}\n")
+        for b in bullets:
+            lines.append(f"- {b}\n")
+    st.download_button(
+        "⬇️ Download Recommendations (Markdown)",
+        data="".join(lines),
+        file_name="business_recommendations.md",
+        mime="text/markdown",
+    )
+
 
 # ---------------------------
 # Notebook & Repo links (optional)
