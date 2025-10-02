@@ -31,13 +31,13 @@ Identify different segments in the existing customer based on their spending pat
 
 **About the Data**
 Data is of various customers of a bank with their credit limit, the total number of credit cards the customer has, and different channels through which a customer has contacted the bank for any queries, different channels include visiting the bank, online and through a call centre.
-Sl_no - Customer Serial Number
-Customer Key - Customer identification
-Avg_Credit_Limit - Average credit limit (currency is not specified, you can make an assumption around this)
-Total_Credit_Cards - Total number of credit cards
-Total_visits_bank - Total bank visits
-Total_visits_online - Total online visits
-Total_calls_made - Total calls made
+-Sl_no - Customer Serial Number
+-Customer Key - Customer identification
+-Avg_Credit_Limit - Average credit limit (currency is not specified, you can make an assumption around this)
+-Total_Credit_Cards - Total number of credit cards
+-Total_visits_bank - Total bank visits
+-Total_visits_online - Total online visits
+-Total_calls_made - Total calls made
 """)
 
 # =========================
@@ -178,7 +178,7 @@ st.dataframe(styler, use_container_width=True)
 # =========================
 st.markdown("""
 **Observations:**  
-- The distribution of average credit limit is heavily skewed to the right. The median is $18,000 while the mean is $34,878. There is also considerable variation among the individuals' credit limits as the standard deviation is $37,813.
+- The distribution of average credit limit is heavily skewed to the right. The median is \$18,000 while the mean is \$34,878. There is also considerable variation among the individuals' credit limits as the standard deviation is $37,813.
 - Half of the individuals have between 3 and 6 credit cards.
 - Individuals typically make between 1 and 4 total bank visits, with a maximum value of 10.
 - Total online visits also typically range between 1 and 4, with a maximum value of 15.
@@ -194,7 +194,7 @@ feat = st.selectbox("Choose feature", options=avail_feats, index=0, key="dist_fe
 c1, c2 = st.columns(2)
 st.markdown("""
 **Observations:** 
-- A majority of customers have credit limits below $50,000, with the most frequent range between $10,000 and $25,000.
+- A majority of customers have credit limits below \$50,000, with the most frequent range between \$10,000 and \$25,000.
 - The most common number of credit cards is 4, followed by 6 and 7. The data appears slightly left-skewed, with fewer customers having very high or very low numbers of credit cards.
 """)
 
