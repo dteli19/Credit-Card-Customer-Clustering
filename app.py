@@ -72,7 +72,7 @@ st.dataframe(df.head())
 # =========================
 # Actions — Data Preparation
 # =========================
-with st.expander("Actions — Data Preparation", expanded=True):
+with st.expander("Actions — Data Preparation"):
     st.markdown("""
 **Steps performed:**
 1) Drop ID-like columns (`SL_NO`, `CUSTOMER_KEY`) if present  
@@ -235,7 +235,7 @@ st.markdown("""
 st.markdown("### KMeans Clustering (K = 3)")
 
 # Optional transparency: Elbow (SSE vs K) only
-with st.expander("Elbow Method (SSE vs K)", expanded=False):
+with st.expander("Elbow Method (SSE vs K)"):
     sse = {}
     K_range = range(1, min(10, max(2, X_scaled.shape[0])))
     for k_ in K_range:
