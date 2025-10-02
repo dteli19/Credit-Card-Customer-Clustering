@@ -106,6 +106,77 @@ scaler = StandardScaler()
 X = numeric_work[avail_feats].values
 X_scaled = scaler.fit_transform(X)
 
+# =============================
+# Summary Table (pre-clustering)
+# =============================
+st.subheader("Summary Table")
+
+# Core stats
+desc = numeric_work[avail_feats].agg(
+    ["count", "mean", "median", "std", "min", "max"]
+).T
+
+# Quartiles & IQR
+q = numeric_work[avail_feats].quantile([0.25, 0.75])
+desc["q1"]  = q.loc[0.25].values
+desc["q3"]  = q.loc[0.75].values
+desc["iqr"] = desc["q3"] - desc["q1"]
+
+# Missing %
+missing_pct = df[avail_feats].isna().mean() * 100
+desc["missing_%"] = missing_pct.values
+
+# Nice display names
+nice_names = {
+    "AVG_CREDIT_LIMIT": "Avg Credit Limit",
+    "TOTAL_CREDIT_CARDS": "Total Credit Cards",
+    "TOTAL_VISITS_BANK": "Bank Visits",
+    "TOTAL_VISITS_ONLINE": "Online Visits",
+    "TOTAL_CALLS_MADE": "Calls Made",
+}
+desc = desc.rename(index=lambda c: nice_names.get(c, c))
+
+# Column order
+desc = desc[["count", "mean", "median", "std", "min", "q1", "q3", "iqr", "max", "missing_%"]]
+
+# Formatting helpers
+def _fmt_val(v, row_name):
+    if row_name == "Avg Credit Limit":
+        return f"${v:,.0f}"
+    # counts / discrete-ish features look nicer with no decimals for min/max/q1/q3
+    return f"{v:,.2f}"
+
+# Build format dict
+fmt_map = {}
+for idx in desc.index:
+    fmt_map[idx] = (lambda v, _idx=idx: _fmt_val(v, _idx))
+
+# Styler (per-column formatting + gradient for means)
+styler = (
+    desc.style
+        .format(fmt_map, na_rep="—")
+        .background_gradient(subset=["mean", "median", "std"], cmap="Blues")
+        .set_table_styles([
+            {"selector": "th", "props": [("background-color", "#0b1220"), ("color", "white"), ("text-align", "left")]},
+            {"selector": "td", "props": [("text-align", "right")]}
+        ])
+)
+
+st.dataframe(styler, use_container_width=True)
+
+
+# =========================
+# Fixed Observations (your exact text)
+# =========================
+st.markdown("### Observations")
+st.markdown("""
+- The distribution of average credit limit is heavily skewed to the right. The median is **$18,000** while the mean is **$34,878**. There is also considerable variation among the individuals' credit limits as the standard deviation is **$37,813**.
+- Half of the individuals have between **3 and 6** credit cards.
+- Individuals typically make between **1 and 4** total bank visits, with a maximum value of **10**.
+- Total online visits also typically range between **1 and 4**, with a maximum value of **15**.
+- Individuals typically make between **1 and 5** calls to the bank, with a maximum of **10**.
+""")
+
 # =========================
 # EDA — Distributions & Correlations
 # =========================
@@ -128,7 +199,7 @@ with c1:
 with c2:
     st.subheader("Distributions- Box Plots")
     fig, ax = plt.subplots()
-    sns.histplot(numeric_work[feat], bins=30, ax=ax)
+    sns.boxplot(numeric_work[feat], bins=30, ax=ax)
     ax.set_xlabel(feat); ax.set_ylabel("Count")
     st.pyplot(fig)    
 
@@ -230,18 +301,6 @@ if not profile.empty:
     st.dataframe(styler, use_container_width=True)
 else:
     st.info("No cluster profiles available (no labeled rows).")
-
-# =========================
-# Fixed Observations (your exact text)
-# =========================
-st.markdown("### Observations")
-st.markdown("""
-- The distribution of average credit limit is heavily skewed to the right. The median is **$18,000** while the mean is **$34,878**. There is also considerable variation among the individuals' credit limits as the standard deviation is **$37,813**.
-- Half of the individuals have between **3 and 6** credit cards.
-- Individuals typically make between **1 and 4** total bank visits, with a maximum value of **10**.
-- Total online visits also typically range between **1 and 4**, with a maximum value of **15**.
-- Individuals typically make between **1 and 5** calls to the bank, with a maximum of **10**.
-""")
 
 # =========================
 # Downloads
