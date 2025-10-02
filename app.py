@@ -37,9 +37,22 @@ if not uploaded:
 # Read data
 try:
     df = pd.read_csv(uploaded)
+    
+    # ✅ Normalize column names immediately after reading
+    df.columns = (
+        df.columns
+          .str.strip()
+          .str.replace(r"\s+", "_", regex=True)
+          .str.upper()
+    )
+
 except Exception as e:
     st.error(f"Could not read CSV: {e}")
     st.stop()
+
+# Now it's safe to use the normalized names everywhere
+numeric_df = df.select_dtypes(include=[np.number]).copy()
+
 
 st.success("File loaded successfully ✅")
 st.subheader("Preview")
@@ -152,6 +165,42 @@ st.download_button(
     file_name="clustered_customers.csv",
     mime="text/csv",
 )
+
+# =============================
+# Column Mapping UI
+# =============================
+st.markdown("---")
+st.header("🧩 Map Your Columns")
+
+roles = {
+    "BALANCE": "Current balance",
+    "PURCHASES": "Total purchases",
+    "CASH_ADVANCE": "Cash advance amount",
+    "CREDIT_LIMIT": "Credit limit",
+    "PAYMENTS": "Payments (total/avg)",
+    "MINIMUM_PAYMENTS": "Minimum payments",
+    "TENURE": "Tenure / months on book"
+}
+
+# Best-effort defaults: pick columns that start with the role name
+def _default_for(role):
+    for c in numeric_df.columns:
+        if c.startswith(role):
+            return c
+    return None
+
+mapped = {}
+for role, label in roles.items():
+    options = ["" ] + list(numeric_df.columns)
+    default = _default_for(role)
+    default_idx = options.index(default) if default in options else 0
+    mapped[role] = st.selectbox(f"{label} →", options, index=default_idx, key=f"map_{role}")
+
+# Utility getters based on mapping
+mapped_cols = [c for c in mapped.values() if c]  # selected numeric columns
+def has(role): return bool(mapped.get(role))
+def col(role): return mapped.get(role) or ""     # actual column name in df
+
 
 # =============================
 # Executive Summary & Insights
@@ -316,72 +365,76 @@ report_md = "".join(report_lines)
 st.download_button("⬇️ Download Summary (Markdown)", data=report_md, file_name="summary_report.md", mime="text/markdown")
 
 # =============================
-# Business Recommendations
+# Business Recommendations (mapping-aware)
 # =============================
-
 st.markdown("---")
 st.header("💡 Business Recommendations")
 
-# Choose columns to profile/recommend on (fallback if not present)
-cand_cols = ["BALANCE","PURCHASES","CASH_ADVANCE","CREDIT_LIMIT","PAYMENTS","MINIMUM_PAYMENTS","TENURE"]
-use_cols = [c for c in cand_cols if c in numeric_df.columns]
+use_cols = mapped_cols
 if len(use_cols) < 3:
-    # if your dataset uses different names, adjust here or let user select:
-    st.info("Not enough standard columns found for recommendations. "
-            "Consider mapping your columns to BALANCE, PURCHASES, CREDIT_LIMIT, etc.")
+    st.info("Not enough mapped numeric columns for recommendations. "
+            "Use the mapping controls above (e.g., BALANCE, PURCHASES, CREDIT_LIMIT).")
 else:
     prof = scored.groupby("Cluster")[use_cols].mean()
 
-    # Compute z-scores per feature across clusters (so we can call “high/low” relative to other clusters)
+    # z-score by column across clusters
     prof_z = (prof - prof.mean()) / (prof.std(ddof=0).replace(0, 1))
 
-    # Heuristics: tune these thresholds as you like
     HIGH = 0.6
     LOW  = -0.6
 
-    recs = []  # (cluster_id, bullets)
+    recs = []
     for cid, row in prof_z.iterrows():
         bullets = []
 
-        # --- Example rules (adjust to your dataset) ---
-        # High BALANCE, Low PAYMENTS -> collections risk / payment plan
-        if ("BALANCE" in row.index and row["BALANCE"] >= HIGH) and ("PAYMENTS" in row.index and row["PAYMENTS"] <= LOW):
-            bullets.append("High revolving balance and relatively low payments → **target with payment plans / APR review**.")
+        def z(role):
+            c = col(role)
+            return float(row.get(c, 0.0)) if c in row.index else 0.0
 
-        # High PURCHASES + High CREDIT_LIMIT -> profitable transactors; upsell rewards
-        if ("PURCHASES" in row.index and row["PURCHASES"] >= HIGH) and ("CREDIT_LIMIT" in row.index and row["CREDIT_LIMIT"] >= HIGH):
-            bullets.append("High purchases with strong credit limit → **upsell premium rewards & retention offers**.")
+        # High BALANCE, Low PAYMENTS -> payment plan
+        if has("BALANCE") and has("PAYMENTS"):
+            if z("BALANCE") >= HIGH and z("PAYMENTS") <= LOW:
+                bullets.append("High revolving balance + relatively low payments → **offer payment plan / APR review**.")
 
-        # High CASH_ADVANCE -> fee-sensitive; promote alternatives
-        if "CASH_ADVANCE" in row.index and row["CASH_ADVANCE"] >= HIGH:
+        # High PURCHASES + High CREDIT_LIMIT -> rewards upsell
+        if has("PURCHASES") and has("CREDIT_LIMIT"):
+            if z("PURCHASES") >= HIGH and z("CREDIT_LIMIT") >= HIGH:
+                bullets.append("Strong spend and limit → **upsell premium rewards & retention offers**.")
+
+        # High CASH_ADVANCE -> counsel on alternatives
+        if has("CASH_ADVANCE") and z("CASH_ADVANCE") >= HIGH:
             bullets.append("Heavy cash advance usage → **educate on lower-cost alternatives; review cash advance fees**.")
 
-        # Low MINIMUM_PAYMENTS vs high BALANCE → delinquency risk
-        if ("MINIMUM_PAYMENTS" in row.index and row["MINIMUM_PAYMENTS"] <= LOW) and ("BALANCE" in row.index and row["BALANCE"] >= HIGH):
-            bullets.append("Low minimum payments relative to balance → **proactive delinquency prevention outreach**.")
+        # Low MINIMUM_PAYMENTS vs High BALANCE -> delinquency prevention
+        if has("MINIMUM_PAYMENTS") and has("BALANCE"):
+            if z("MINIMUM_PAYMENTS") <= LOW and z("BALANCE") >= HIGH:
+                bullets.append("Low minimum payments relative to balance → **proactive delinquency prevention**.")
 
-        # New customers (low TENURE) with moderate/high PURCHASES → nurture early loyalty
-        if "TENURE" in row.index and row["TENURE"] <= LOW:
-            if "PURCHASES" in row.index and row["PURCHASES"] >= 0:
-                bullets.append("Newer customers showing activity → **onboard with early-life rewards & tips to increase stickiness**.")
+        # Low TENURE → onboarding/nurture
+        if has("TENURE") and z("TENURE") <= LOW:
+            if has("PURCHASES") and z("PURCHASES") >= 0:
+                bullets.append("Newer but active → **early-life rewards & education**.")
             else:
-                bullets.append("Newer customers with low activity → **onboard with welcome nudges & first-purchase incentives**.")
+                bullets.append("Newer & low activity → **welcome nudges & first-purchase incentives**.")
 
-        # If nothing triggered, add a generic action based on top feature
         if not bullets:
-            top_feat = row.abs().sort_values(ascending=False).index[0]
-            direction = "high" if row[top_feat] > 0 else "low"
-            bullets.append(f"No strong signals hit. Focus on segment’s **{direction} {top_feat}** with tailored messaging.")
+            # Generic fallback: pick the most extreme feature for this cluster
+            # (highest absolute z-score among mapped columns)
+            if len(row) > 0:
+                top_col = row.abs().sort_values(ascending=False).index[0]
+                direction = "high" if row[top_col] > 0 else "low"
+                bullets.append(f"No strong signals. Focus on this segment’s **{direction} {top_col}** with tailored messaging.")
+            else:
+                bullets.append("No mapped features available for profiling.")
 
         recs.append((cid, bullets))
 
-    # Render recommendations
     for cid, bullets in recs:
         st.subheader(f"Cluster C{cid}: Recommended Actions")
         for b in bullets:
             st.markdown(f"- {b}")
 
-    # Downloadable recommendations (Markdown)
+    # Download recommendations
     lines = ["# Business Recommendations\n"]
     for cid, bullets in recs:
         lines.append(f"\n## Cluster C{cid}\n")
@@ -395,51 +448,45 @@ else:
     )
 
 # =============================
-# Next Best Action (NBA) Scoring
+# Next Best Action (Cluster-Level, mapping-aware)
 # =============================
 st.markdown("---")
 st.header("🎯 Next Best Action (Cluster-Level)")
 
-# 1) Choose columns to base NBA on (fallbacks included)
-nba_cols_pref = ["BALANCE","PURCHASES","CASH_ADVANCE","CREDIT_LIMIT","PAYMENTS","MINIMUM_PAYMENTS","TENURE"]
-nba_cols = [c for c in nba_cols_pref if c in numeric_df.columns]
+nba_cols = mapped_cols
 if len(nba_cols) < 3:
-    st.info("Not enough standard columns found for Next Best Action. Map your columns to BALANCE, PURCHASES, CREDIT_LIMIT, etc.")
+    st.info("Not enough mapped numeric columns for Next Best Action. Map your columns above.")
 else:
-    # 2) Cluster means and z-scores (relative comparison across clusters)
     cluster_means = scored.groupby("Cluster")[nba_cols].mean()
-    # avoid div-by-zero
     std = cluster_means.std(ddof=0).replace(0, 1)
     prof_z = (cluster_means - cluster_means.mean()) / std
 
-    # small helper
-    def z(row, col): 
-        return float(row.get(col, 0.0)) if col in row.index else 0.0
+    def Z(row, role):
+        c = col(role)
+        return float(row.get(c, 0.0)) if c in row.index else 0.0
 
-    # 3) Raw (non-normalized) action scores using simple, explainable rules
-    #    You can tweak the weights per your domain
-    raw_scores = []
+    raw_rows = []
     for cid, row in prof_z.iterrows():
         payment_plan = max(0.0,
-            0.50*z(row,"BALANCE") 
-          + 0.30*(-z(row,"PAYMENTS")) 
-          + 0.20*(-z(row,"MINIMUM_PAYMENTS"))
+            0.50*(Z(row,"BALANCE") if has("BALANCE") else 0.0) +
+            0.30*(-Z(row,"PAYMENTS") if has("PAYMENTS") else 0.0) +
+            0.20*(-Z(row,"MINIMUM_PAYMENTS") if has("MINIMUM_PAYMENTS") else 0.0)
         )
         rewards_upsell = max(0.0,
-            0.50*z(row,"PURCHASES") 
-          + 0.30*z(row,"CREDIT_LIMIT") 
-          + 0.20*z(row,"PAYMENTS")
+            0.50*(Z(row,"PURCHASES") if has("PURCHASES") else 0.0) +
+            0.30*(Z(row,"CREDIT_LIMIT") if has("CREDIT_LIMIT") else 0.0) +
+            0.20*(Z(row,"PAYMENTS") if has("PAYMENTS") else 0.0)
         )
         cash_adv_counsel = max(0.0,
-            0.70*z(row,"CASH_ADVANCE") 
-          + 0.30*(-z(row,"PAYMENTS"))
+            0.70*(Z(row,"CASH_ADVANCE") if has("CASH_ADVANCE") else 0.0) +
+            0.30*(-Z(row,"PAYMENTS") if has("PAYMENTS") else 0.0)
         )
         onboarding_nurture = max(0.0,
-            0.60*(-z(row,"TENURE")) 
-          + 0.40*(-z(row,"PURCHASES"))
+            0.60*(-Z(row,"TENURE") if has("TENURE") else 0.0) +
+            0.40*(-Z(row,"PURCHASES") if has("PURCHASES") else 0.0)
         )
 
-        raw_scores.append({
+        raw_rows.append({
             "Cluster": cid,
             "PaymentPlan_Priority": payment_plan,
             "RewardsUpsell_Priority": rewards_upsell,
@@ -447,41 +494,31 @@ else:
             "OnboardingNurture_Priority": onboarding_nurture,
         })
 
-    import pandas as pd
-    nba_raw = pd.DataFrame(raw_scores).set_index("Cluster")
+    nba_raw = pd.DataFrame(raw_rows).set_index("Cluster")
 
-    # 4) Normalize each action column to 0–100 across clusters for easy comparison
-    def _to_0_100(col):
+    def _norm(col):
         lo, hi = col.min(), col.max()
         if hi - lo == 0:
             return col*0 + 0.0
         return (col - lo) / (hi - lo) * 100.0
 
-    nba_norm = nba_raw.apply(_to_0_100, axis=0).round(1)
-    nba_norm = nba_norm.astype(float)
+    nba_norm = nba_raw.apply(_norm, axis=0).round(1).astype(float)
+    nba_norm["Top_Action"] = nba_norm.idxmax(axis=1)
+    nba_norm["Top_Score"]  = nba_norm.max(axis=1).round(1)
 
-    # 5) Rank suggested action per cluster
-    top_action = nba_norm.idxmax(axis=1)
-    top_score  = nba_norm.max(axis=1).round(1)
-    nba_table = nba_norm.copy()
-    nba_table["Top_Action"] = top_action
-    nba_table["Top_Score"]  = top_score
+    st.caption("Scores normalized 0–100 across clusters (relative within this dataset).")
+    st.dataframe(nba_norm.sort_values("Top_Score", ascending=False))
 
-    st.caption("Scores are relative across clusters (0–100). Higher = higher priority for that action within this dataset.")
-    st.dataframe(nba_table.sort_values("Top_Score", ascending=False))
-
-    # 6) Download
     st.download_button(
         "⬇️ Download Next Best Action Table (CSV)",
-        data=nba_table.reset_index().to_csv(index=False),
+        data=nba_norm.reset_index().to_csv(index=False),
         file_name="next_best_action_by_cluster.csv",
         mime="text/csv",
     )
 
-    # 7) Quick text summary
     st.subheader("NBA Summary")
-    for cid in nba_table.sort_values("Top_Score", ascending=False).index:
-        st.markdown(f"- **Cluster C{cid}** → **{nba_table.loc[cid,'Top_Action']}** (score {nba_table.loc[cid,'Top_Score']})")
+    for cid in nba_norm.sort_values("Top_Score", ascending=False).index:
+        st.markdown(f"- **Cluster C{cid}** → **{nba_norm.loc[cid,'Top_Action']}** (score {nba_norm.loc[cid,'Top_Score']})")
 
 
 # ---------------------------
