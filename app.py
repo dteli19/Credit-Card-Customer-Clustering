@@ -27,9 +27,9 @@ with st.expander("Context & Problem Statement", expanded=True):
 AllLife Bank wants to understand its credit-card customers better to improve penetration and upgrade service delivery.
 
 **Problem Statement**  
-Identify distinct customer segments based on **credit capacity** and **service behaviors** (branch/online/calls) so Marketing and Ops can:
-- run targeted **upsell/loyalty** programs, and  
-- reduce servicing cost via **digital/self-service** where appropriate.
+Identify distinct customer segments based on credit capacity and service behaviors (branch/online/calls) so Marketing and Ops can:
+- run targeted upsell/loyalty programs, and  
+- reduce servicing cost via digital/self-service where appropriate.
 """)
 
 # =========================
@@ -112,27 +112,41 @@ X_scaled = scaler.fit_transform(X)
 st.markdown("### Exploratory Analysis")
 
 c1, c2 = st.columns(2)
+feat = st.selectbox("Choose feature", options=avail_feats, index=0, key="dist_feat")
 
 with c1:
-    st.subheader("Distributions")
-    feat = st.selectbox("Choose feature", options=avail_feats, index=0, key="dist_feat")
+    st.subheader("Distributions- Column Graph")
     fig, ax = plt.subplots()
     sns.histplot(numeric_work[feat], bins=30, ax=ax)
     ax.set_xlabel(feat); ax.set_ylabel("Count")
     st.pyplot(fig)
+    st.markdown("""
+    - A majority of customers have credit limits below **50,000**, with the most frequent range between **10,000 and 25,000**.
+    - The most common number of credit cards is **4**, followed by **6** and **7**. The data appears slightly left-skewed, with fewer customers having very high or very low numbers of credit cards.
+    """)
 
 with c2:
-    st.subheader("Correlation Heatmap")
-    corr = numeric_work[avail_feats].corr(numeric_only=True)
-    fig, ax = plt.subplots(figsize=(6, 5))
-    sns.heatmap(corr, cmap="Blues", annot=False, ax=ax)
-    st.pyplot(fig)
-    st.markdown("""
-    **Correlation matrix**  
-  - Avg_Credit_Limit is **positively** correlated with **Total_Credit_Cards** and **Total_visits_online** (makes sense).  
-  - Avg_Credit_Limit is **negatively** correlated with **Total_calls_made** and **Total_visits_bank**.  
-  - **Total_visits_bank**, **Total_visits_online**, **Total_calls_made** are **negatively correlated**, implying most customers use only one of these channels to contact the bank.
-    """)
+    st.subheader("Distributions- Box Plots")
+    fig, ax = plt.subplots()
+    sns.histplot(numeric_work[feat], bins=30, ax=ax)
+    ax.set_xlabel(feat); ax.set_ylabel("Count")
+    st.pyplot(fig)    
+
+# =========================
+# Correlation Heatmap
+# =========================
+st.markdown("### Correlation Heatmap")
+corr = numeric_work[avail_feats].corr(numeric_only=True)
+fig, ax = plt.subplots(figsize=(6, 5))
+sns.heatmap(corr, cmap="Blues", annot=False, ax=ax)
+st.pyplot(fig)
+st.markdown("""
+**Correlation matrix**  
+- Avg_Credit_Limit is **positively** correlated with **Total_Credit_Cards** and **Total_visits_online** (makes sense).  
+- Avg_Credit_Limit is **negatively** correlated with **Total_calls_made** and **Total_visits_bank**.  
+- **Total_visits_bank**, **Total_visits_online**, **Total_calls_made** are **negatively correlated**, implying most customers use only one of these channels to contact the bank.
+""")
+
 
 # =========================
 # KMeans — Fixed K=3 (no silhouette / no picker / no PCA)
@@ -227,8 +241,6 @@ st.markdown("""
 - Individuals typically make between **1 and 4** total bank visits, with a maximum value of **10**.
 - Total online visits also typically range between **1 and 4**, with a maximum value of **15**.
 - Individuals typically make between **1 and 5** calls to the bank, with a maximum of **10**.
-- A majority of customers have credit limits below **50,000**, with the most frequent range between **10,000 and 25,000**.
-- The most common number of credit cards is **4**, followed by **6** and **7**. The data appears slightly left-skewed, with fewer customers having very high or very low numbers of credit cards.
 """)
 
 # =========================
