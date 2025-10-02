@@ -127,6 +127,12 @@ with c2:
     fig, ax = plt.subplots(figsize=(6, 5))
     sns.heatmap(corr, cmap="Blues", annot=False, ax=ax)
     st.pyplot(fig)
+    st.markdown("""
+    **Correlation matrix**  
+  - Avg_Credit_Limit is **positively** correlated with **Total_Credit_Cards** and **Total_visits_online** (makes sense).  
+  - Avg_Credit_Limit is **negatively** correlated with **Total_calls_made** and **Total_visits_bank**.  
+  - **Total_visits_bank**, **Total_visits_online**, **Total_calls_made** are **negatively correlated**, implying most customers use only one of these channels to contact the bank.
+    """)
 
 # =========================
 # KMeans — Fixed K=3 (no silhouette / no picker / no PCA)
@@ -223,10 +229,6 @@ st.markdown("""
 - Individuals typically make between **1 and 5** calls to the bank, with a maximum of **10**.
 - A majority of customers have credit limits below **50,000**, with the most frequent range between **10,000 and 25,000**.
 - The most common number of credit cards is **4**, followed by **6** and **7**. The data appears slightly left-skewed, with fewer customers having very high or very low numbers of credit cards.
-- **Correlation matrix**  
-  - Avg_Credit_Limit is **positively** correlated with **Total_Credit_Cards** and **Total_visits_online** (makes sense).  
-  - Avg_Credit_Limit is **negatively** correlated with **Total_calls_made** and **Total_visits_bank**.  
-  - **Total_visits_bank**, **Total_visits_online**, **Total_calls_made** are **negatively correlated**, implying most customers use only one of these channels to contact the bank.
 """)
 
 # =========================
