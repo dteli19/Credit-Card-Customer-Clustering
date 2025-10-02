@@ -24,12 +24,20 @@ st.caption("Context • Problem • Actions • Results")
 with st.expander("Context & Problem Statement", expanded=True):
     st.markdown("""
 **Context**  
-AllLife Bank wants to understand its credit-card customers better to improve penetration and upgrade service delivery.
+AllLife Bank wants to focus on its credit card customer base in the next financial year. They have been advised by their marketing research team, that the penetration in the market can be improved. Based on this input, the Marketing team proposes to run personalized campaigns to target new customers as well as upsell to existing customers. Another insight from the market research was that the customers hold negative perceptions of support services. Based on this, the Operations team wants to upgrade the service delivery model, to ensure that customers queries are resolved faster. Head of Marketing and Head of Delivery both decide to reach out to the Data Science team for help.
 
 **Problem Statement**  
-Identify distinct customer segments based on credit capacity and service behaviors (branch/online/calls) so Marketing and Ops can:
-- run targeted upsell/loyalty programs, and  
-- reduce servicing cost via digital/self-service where appropriate.
+Identify different segments in the existing customer based on their spending patterns as well as past interaction with the bank.
+
+**About the Data**
+Data is of various customers of a bank with their credit limit, the total number of credit cards the customer has, and different channels through which a customer has contacted the bank for any queries, different channels include visiting the bank, online and through a call centre.
+Sl_no - Customer Serial Number
+Customer Key - Customer identification
+Avg_Credit_Limit - Average credit limit (currency is not specified, you can make an assumption around this)
+Total_Credit_Cards - Total number of credit cards
+Total_visits_bank - Total bank visits
+Total_visits_online - Total online visits
+Total_calls_made - Total calls made
 """)
 
 # =========================
@@ -170,11 +178,11 @@ st.dataframe(styler, use_container_width=True)
 # =========================
 st.markdown("""
 **Observations:**  
-- The distribution of average credit limit is heavily skewed to the right. The median is **$18,000** while the mean is **$34,878**. There is also considerable variation among the individuals' credit limits as the standard deviation is **$37,813**.
-- Half of the individuals have between **3 and 6** credit cards.
-- Individuals typically make between **1 and 4** total bank visits, with a maximum value of **10**.
-- Total online visits also typically range between **1 and 4**, with a maximum value of **15**.
-- Individuals typically make between **1 and 5** calls to the bank, with a maximum of **10**.
+- The distribution of average credit limit is heavily skewed to the right. The median is $18,000 while the mean is $34,878. There is also considerable variation among the individuals' credit limits as the standard deviation is $37,813.
+- Half of the individuals have between 3 and 6 credit cards.
+- Individuals typically make between 1 and 4 total bank visits, with a maximum value of 10.
+- Total online visits also typically range between 1 and 4, with a maximum value of 15.
+- Individuals typically make between 1 and 5 calls to the bank, with a maximum of 10.
 """)
 
 # =========================
@@ -186,8 +194,8 @@ feat = st.selectbox("Choose feature", options=avail_feats, index=0, key="dist_fe
 c1, c2 = st.columns(2)
 st.markdown("""
 **Observations:** 
-- A majority of customers have credit limits below **50,000**, with the most frequent range between **10,000 and 25,000**.
-- The most common number of credit cards is **4**, followed by **6** and **7**. The data appears slightly left-skewed, with fewer customers having very high or very low numbers of credit cards.
+- A majority of customers have credit limits below $50,000, with the most frequent range between $10,000 and $25,000.
+- The most common number of credit cards is 4, followed by 6 and 7. The data appears slightly left-skewed, with fewer customers having very high or very low numbers of credit cards.
 """)
 
 with c1:
@@ -215,9 +223,9 @@ sns.heatmap(corr, cmap="Blues", annot=False, ax=ax)
 st.pyplot(fig)
 st.markdown("""
 **Observations:**  
-- Avg_Credit_Limit is **positively** correlated with **Total_Credit_Cards** and **Total_visits_online** (makes sense).  
-- Avg_Credit_Limit is **negatively** correlated with **Total_calls_made** and **Total_visits_bank**.  
-- **Total_visits_bank**, **Total_visits_online**, **Total_calls_made** are **negatively correlated**, implying most customers use only one of these channels to contact the bank.
+- Avg_Credit_Limit is positively correlated with Total_Credit_Cards and Total_visits_online (makes sense).  
+- Avg_Credit_Limit is negatively correlated with Total_calls_made and Total_visits_bank.  
+- Total_visits_bank, Total_visits_online, Total_calls_made are negatively correlated, implying most customers use only one of these channels to contact the bank.
 """)
 
 
