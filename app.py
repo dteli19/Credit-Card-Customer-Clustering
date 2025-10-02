@@ -394,6 +394,95 @@ else:
         mime="text/markdown",
     )
 
+# =============================
+# Next Best Action (NBA) Scoring
+# =============================
+st.markdown("---")
+st.header("🎯 Next Best Action (Cluster-Level)")
+
+# 1) Choose columns to base NBA on (fallbacks included)
+nba_cols_pref = ["BALANCE","PURCHASES","CASH_ADVANCE","CREDIT_LIMIT","PAYMENTS","MINIMUM_PAYMENTS","TENURE"]
+nba_cols = [c for c in nba_cols_pref if c in numeric_df.columns]
+if len(nba_cols) < 3:
+    st.info("Not enough standard columns found for Next Best Action. Map your columns to BALANCE, PURCHASES, CREDIT_LIMIT, etc.")
+else:
+    # 2) Cluster means and z-scores (relative comparison across clusters)
+    cluster_means = scored.groupby("Cluster")[nba_cols].mean()
+    # avoid div-by-zero
+    std = cluster_means.std(ddof=0).replace(0, 1)
+    prof_z = (cluster_means - cluster_means.mean()) / std
+
+    # small helper
+    def z(row, col): 
+        return float(row.get(col, 0.0)) if col in row.index else 0.0
+
+    # 3) Raw (non-normalized) action scores using simple, explainable rules
+    #    You can tweak the weights per your domain
+    raw_scores = []
+    for cid, row in prof_z.iterrows():
+        payment_plan = max(0.0,
+            0.50*z(row,"BALANCE") 
+          + 0.30*(-z(row,"PAYMENTS")) 
+          + 0.20*(-z(row,"MINIMUM_PAYMENTS"))
+        )
+        rewards_upsell = max(0.0,
+            0.50*z(row,"PURCHASES") 
+          + 0.30*z(row,"CREDIT_LIMIT") 
+          + 0.20*z(row,"PAYMENTS")
+        )
+        cash_adv_counsel = max(0.0,
+            0.70*z(row,"CASH_ADVANCE") 
+          + 0.30*(-z(row,"PAYMENTS"))
+        )
+        onboarding_nurture = max(0.0,
+            0.60*(-z(row,"TENURE")) 
+          + 0.40*(-z(row,"PURCHASES"))
+        )
+
+        raw_scores.append({
+            "Cluster": cid,
+            "PaymentPlan_Priority": payment_plan,
+            "RewardsUpsell_Priority": rewards_upsell,
+            "CashAdvanceCounsel_Priority": cash_adv_counsel,
+            "OnboardingNurture_Priority": onboarding_nurture,
+        })
+
+    import pandas as pd
+    nba_raw = pd.DataFrame(raw_scores).set_index("Cluster")
+
+    # 4) Normalize each action column to 0–100 across clusters for easy comparison
+    def _to_0_100(col):
+        lo, hi = col.min(), col.max()
+        if hi - lo == 0:
+            return col*0 + 0.0
+        return (col - lo) / (hi - lo) * 100.0
+
+    nba_norm = nba_raw.apply(_to_0_100, axis=0).round(1)
+    nba_norm = nba_norm.astype(float)
+
+    # 5) Rank suggested action per cluster
+    top_action = nba_norm.idxmax(axis=1)
+    top_score  = nba_norm.max(axis=1).round(1)
+    nba_table = nba_norm.copy()
+    nba_table["Top_Action"] = top_action
+    nba_table["Top_Score"]  = top_score
+
+    st.caption("Scores are relative across clusters (0–100). Higher = higher priority for that action within this dataset.")
+    st.dataframe(nba_table.sort_values("Top_Score", ascending=False))
+
+    # 6) Download
+    st.download_button(
+        "⬇️ Download Next Best Action Table (CSV)",
+        data=nba_table.reset_index().to_csv(index=False),
+        file_name="next_best_action_by_cluster.csv",
+        mime="text/csv",
+    )
+
+    # 7) Quick text summary
+    st.subheader("NBA Summary")
+    for cid in nba_table.sort_values("Top_Score", ascending=False).index:
+        st.markdown(f"- **Cluster C{cid}** → **{nba_table.loc[cid,'Top_Action']}** (score {nba_table.loc[cid,'Top_Score']})")
+
 
 # ---------------------------
 # Notebook & Repo links (optional)
