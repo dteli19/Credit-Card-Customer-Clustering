@@ -199,8 +199,8 @@ with c1:
 with c2:
     st.subheader("Distributions- Box Plots")
     fig, ax = plt.subplots()
-    sns.boxplot(data=numeric_work[feat], x="CLUSTER", y=feat, ax=ax)
-    ax.set_xlabel("CLUSTER"); ax.set_ylabel("Count")
+    sns.histplot(numeric_work[feat], bins=30, ax=ax)
+    ax.set_xlabel(feat); ax.set_ylabel("Count")
     st.pyplot(fig)    
 
 # =========================
