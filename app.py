@@ -198,11 +198,12 @@ with c1:
     st.pyplot(fig)
 
 with c2:
-    st.subheader("Distributions- Box Plots")
+    st.subheader("Distributions — Box Plot")
     fig, ax = plt.subplots()
-    sns.histplot(numeric_work[feat], bins=30, ax=ax)
-    ax.set_xlabel(feat); ax.set_ylabel("Count")
-    st.pyplot(fig)    
+    sns.boxplot(y=numeric_work[feat], ax=ax)   # vertical box plot
+    ax.set_ylabel(feat)
+    ax.set_xlabel("")
+    st.pyplot(fig) 
 
 # =========================
 # Correlation Heatmap
