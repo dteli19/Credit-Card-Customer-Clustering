@@ -237,16 +237,16 @@ st.markdown("### KMeans Clustering (K = 3)")
 # Optional transparency: Elbow (SSE vs K) only
 st.expander("Elbow Method (SSE vs K)")
 sse = {}
-    K_range = range(1, min(10, max(2, X_scaled.shape[0])))
-    for k_ in K_range:
-        try:
-            sse[k_] = KMeans(n_clusters=k_, n_init=10, random_state=1).fit(X_scaled).inertia_
-        except Exception:
-            sse[k_] = np.nan
-    fig, ax = plt.subplots()
-    ax.plot(list(sse.keys()), list(sse.values()), "bx-")
-    ax.set_xlabel("Number of clusters (K)"); ax.set_ylabel("SSE (Inertia)")
-    st.pyplot(fig)
+K_range = range(1, min(10, max(2, X_scaled.shape[0])))
+for k_ in K_range:
+    try:
+        sse[k_] = KMeans(n_clusters=k_, n_init=10, random_state=1).fit(X_scaled).inertia_
+    except Exception:
+        sse[k_] = np.nan
+fig, ax = plt.subplots()
+ax.plot(list(sse.keys()), list(sse.values()), "bx-")
+ax.set_xlabel("Number of clusters (K)"); ax.set_ylabel("SSE (Inertia)")
+st.pyplot(fig)
 
 # Final KMeans with K=3
 k = 3
