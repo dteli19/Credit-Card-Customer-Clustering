@@ -181,9 +181,9 @@ st.markdown("""
 # EDA — Distributions & Correlations
 # =========================
 st.markdown("### Exploratory Analysis")
+feat = st.selectbox("Choose feature", options=avail_feats, index=0, key="dist_feat")
 
 c1, c2 = st.columns(2)
-feat = st.selectbox("Choose feature", options=avail_feats, index=0, key="dist_feat")
 
 with c1:
     st.subheader("Distributions- Column Graph")
