@@ -168,8 +168,8 @@ st.dataframe(styler, use_container_width=True)
 # =========================
 # Fixed Observations (your exact text)
 # =========================
-st.markdown("### Observations")
 st.markdown("""
+**Observations:**  
 - The distribution of average credit limit is heavily skewed to the right. The median is **$18,000** while the mean is **$34,878**. There is also considerable variation among the individuals' credit limits as the standard deviation is **$37,813**.
 - Half of the individuals have between **3 and 6** credit cards.
 - Individuals typically make between **1 and 4** total bank visits, with a maximum value of **10**.
@@ -184,6 +184,11 @@ st.markdown("### Exploratory Analysis")
 feat = st.selectbox("Choose feature", options=avail_feats, index=0, key="dist_feat")
 
 c1, c2 = st.columns(2)
+st.markdown("""
+**Observations:** 
+- A majority of customers have credit limits below **50,000**, with the most frequent range between **10,000 and 25,000**.
+- The most common number of credit cards is **4**, followed by **6** and **7**. The data appears slightly left-skewed, with fewer customers having very high or very low numbers of credit cards.
+""")
 
 with c1:
     st.subheader("Distributions- Column Graph")
@@ -191,10 +196,6 @@ with c1:
     sns.histplot(numeric_work[feat], bins=30, ax=ax)
     ax.set_xlabel(feat); ax.set_ylabel("Count")
     st.pyplot(fig)
-    st.markdown("""
-    - A majority of customers have credit limits below **50,000**, with the most frequent range between **10,000 and 25,000**.
-    - The most common number of credit cards is **4**, followed by **6** and **7**. The data appears slightly left-skewed, with fewer customers having very high or very low numbers of credit cards.
-    """)
 
 with c2:
     st.subheader("Distributions- Box Plots")
@@ -212,7 +213,7 @@ fig, ax = plt.subplots(figsize=(6, 5))
 sns.heatmap(corr, cmap="Blues", annot=False, ax=ax)
 st.pyplot(fig)
 st.markdown("""
-**Correlation matrix**  
+**Observations:**  
 - Avg_Credit_Limit is **positively** correlated with **Total_Credit_Cards** and **Total_visits_online** (makes sense).  
 - Avg_Credit_Limit is **negatively** correlated with **Total_calls_made** and **Total_visits_bank**.  
 - **Total_visits_bank**, **Total_visits_online**, **Total_calls_made** are **negatively correlated**, implying most customers use only one of these channels to contact the bank.
@@ -264,6 +265,7 @@ profile = (
 # ---- Cluster Descriptions (from your brief) ----
 st.subheader("Cluster Descriptions")
 st.markdown("""
+**Results:**  
 - **Cluster 0**: Individuals with **low average credit limit**, **very few or no credit cards**, and who **use the phone** as the primary method to contact the bank.  
 - **Cluster 1**: Individuals with **average credit limits**, **average number of credit cards**, and a **tendency to contact the bank in person** (branch visits).  
 - **Cluster 2**: Individuals with **very high average credit limit**, **high count of credit cards**, and a **tendency to use online banking services**.
