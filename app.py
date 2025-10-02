@@ -235,7 +235,7 @@ st.markdown("""
 st.markdown("### KMeans Clustering (K = 3)")
 
 # Optional transparency: Elbow (SSE vs K) only
-st.expander("Elbow Method (SSE vs K)"):
+st.expander("Elbow Method (SSE vs K)")
 sse = {}
     K_range = range(1, min(10, max(2, X_scaled.shape[0])))
     for k_ in K_range:
