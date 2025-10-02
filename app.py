@@ -261,7 +261,7 @@ scored.loc[work.index, "CLUSTER"] = labels
 # =========================
 # Results — Descriptions then Table
 # =========================
-st.markdown("## Results")
+st.markdown("## Results- Cluster Descriptions")
 
 # Cluster profiles (means) for labeled rows only
 profile = (
@@ -270,9 +270,6 @@ profile = (
     .mean()
     .round(2)
 )
-
-# ---- Cluster Descriptions (from your brief) ----
-st.subheader("Cluster Descriptions")
 
 # ---- Beautified Cluster Profile Table ----
 if not profile.empty:
