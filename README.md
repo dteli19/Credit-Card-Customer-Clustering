@@ -27,7 +27,7 @@ The segmentation helps in:
 3. **Clustering** → KMeans (K=3), validated with elbow method  
 4. **Comparison** → Gaussian Mixture Models (similar clusters)  
 
-## 📂 Data
+## 📂 About the Data
 **660 customer records** with the following variables:
 
 - `Avg_Credit_Limit`  
