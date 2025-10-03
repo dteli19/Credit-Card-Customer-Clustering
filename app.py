@@ -75,7 +75,7 @@ st.dataframe(df.head())
 # =========================
 # Actions — Data Preparation
 # =========================
-st.markdown("Actions — Data Preparation")
+st.subheader("Actions — Data Preparation")
 st.markdown("""
 **Steps performed:**
 1) Drop ID-like columns (`SL_NO`, `CUSTOMER_KEY`) if present  
