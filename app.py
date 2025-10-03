@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 
 st.set_page_config(
-    page_title="Credit Card Clustering — Context • Problem • Action • Results",
+    page_title="Credit Card Clustering",
     page_icon="📊",
     layout="wide",
 )
