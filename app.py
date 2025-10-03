@@ -19,7 +19,6 @@ st.set_page_config(
 # Header & Story Framework
 # =========================
 st.title("📊 Credit Card Customer Clustering")
-st.caption("Context • Problem • Actions • Results")
 
 with st.expander("Context & Problem Statement", expanded=True):
     st.markdown("""
