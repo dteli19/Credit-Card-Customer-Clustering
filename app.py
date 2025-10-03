@@ -41,31 +41,34 @@ Data is of various customers of a bank with their credit limit, the total number
 """)
 
 # =========================
-# Upload
+# Load fixed CSV (no uploader)
 # =========================
-uploaded = st.file_uploader(
-    "Upload the Credit Card CSV (e.g., Sl_No, Customer Key, Avg_Credit_Limit, Total_Credit_Cards, Total_visits_bank, Total_visits_online, Total_calls_made)",
-    type=["csv"],
-)
-if not uploaded:
-    st.info("Please upload your dataset to proceed.")
-    st.stop()
+import os
 
-# Read + normalize
-try:
-    df = pd.read_csv(uploaded)
-    # Normalize headers (spaces → underscores, uppercase) for consistency
+DATA_PATH = "Credit Card Customer Data.csv"  # <-- adjust to your file location/name
+
+@st.cache_data(show_spinner=False)
+def load_data(path: str) -> pd.DataFrame:
+    df = pd.read_csv(path)
+    # normalize headers
     df.columns = (
         df.columns
-        .str.strip()
-        .str.replace(r"\s+", "_", regex=True)
-        .str.upper()
+          .str.strip()
+          .str.replace(r"\s+", "_", regex=True)
+          .str.upper()
     )
-except Exception as e:
-    st.error(f"Could not read CSV: {e}")
+    return df
+
+if not os.path.exists(DATA_PATH):
+    st.error(
+        f"Data file not found at `{DATA_PATH}`.\n"
+        "Add the CSV to your repository (e.g., `data/credit_card_customer_data.csv`) "
+        "or update `DATA_PATH` in app.py."
+    )
     st.stop()
 
-st.success("File loaded successfully ✅")
+df = load_data(DATA_PATH)
+st.success(f"Loaded fixed dataset: `{DATA_PATH}` ✅")
 st.markdown("### Raw Preview")
 st.dataframe(df.head())
 
