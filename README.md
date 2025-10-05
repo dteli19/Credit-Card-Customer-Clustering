@@ -3,7 +3,7 @@
 Unsupervised machine learning project using **KMeans clustering** to segment credit card customers for AllLife Bank.  
 The project delivers insights framed in a **business analysis workflow**: Context → Objective → Data → Actions → Observations → Results.
 
-🔗 [Live Streamlit App](https://projects-lmjf6blhrn8hy4xhzl7vfu.streamlit.app/)
+🔗 [Live Streamlit App](https://credit-card-customer-clustering-8nsa98ruztdgc6wktz3hfa.streamlit.app/)
 
 ## 📌 Context
 AllLife Bank aims to:
